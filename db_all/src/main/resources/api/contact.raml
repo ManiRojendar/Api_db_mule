@@ -1,0 +1,54 @@
+#%RAML 1.0
+types:
+  contact:
+    example:
+      strict: true
+      value:
+        snp: "001"
+        name: nani
+        sname: velpula
+        phone: "9441318125"
+    properties:
+      sno?:
+        example: 1
+        type: number
+        format: int
+      name?:
+        example: Example
+        type: string
+      sname?:
+        example: Example
+        type: string
+      phone?:
+        example: Example
+        type: string
+  body:
+    type: object
+title: contactus
+mediaType:
+  - application/json
+version: "1"
+protocols:
+  - HTTP
+  - HTTPS
+/contactusmani:
+  get:
+    responses:
+      "200":
+        body:
+          items:
+            type: contact
+  post:
+    responses:
+      "201":
+        body:
+          application/json:
+            items:
+              type: contact
+  delete:
+    responses:
+      "200":
+        body:
+          application/json:
+            items:
+              type: contact
