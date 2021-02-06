@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b22ba454-bcd9-4f60-98f2-a48548a12e0b" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="8870668b-ee50-48ef-9652-20e83c17d7d5" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="123456" database="mani" />
+	</db:config>
+	<ftp:config name="FTP_Config" doc:name="FTP Config" doc:id="b0ed4745-85e1-437e-9245-7732aa0701de" >
+		<ftp:connection workingDir="empdr" host="localhost" username="ftp_user" password="123456" />
+	</ftp:config>
+	<flow name="ftpFlow" doc:id="0f07e765-be37-4e00-a3b4-899b097aa2ec" >
+		<http:listener doc:name="Listener" doc:id="16f5eed1-6e6b-4526-beaf-9b8d0519f2e3" config-ref="HTTP_Listener_config" path="/ftp"/>
+		<logger level="INFO" doc:name="Logger" doc:id="a181e1ee-2c82-4ebc-a4cf-95bbcb302fdd" message="before"/>
+		<ftp:read doc:name="Read" doc:id="1a3a40ae-702d-44c5-bce7-68b14e984d6c" config-ref="FTP_Config" path="abc.csv"/>
+		<ee:transform doc:name="Transform Message" doc:id="abdbd76e-7839-4a40-9f99-554c8782b0cb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="68bf4748-bb5d-4a95-9deb-138d1d193945" message="#[payload]"/>
+	</flow>
+	<flow name="ftpFlow1" doc:id="d00ba39d-88ea-435e-b7e5-d9839147c438" >
+		<scheduler doc:name="Scheduler" doc:id="f78aa06d-9e52-4336-b8ad-17e0a92d73f8" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="0c6b8c90-d11a-426e-bb04-c1a2e34bc991" message="before"/>
+		<db:select doc:name="Select" doc:id="db85efce-6e16-498b-af1a-9151d1f11091" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from student]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="35046675-0ee5-49ef-a64d-42a21889532b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xlsx
+---
+{
+	student: payload map ( payload01 , indexOfPayload01 ) -> {
+		sno: payload01.sn as String,
+		name: payload01.name,
+		sname: payload01.sname,
+		phone: payload01.phone
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ftp:write doc:name="Write" doc:id="226afa45-f85f-46e4-bb61-6c885abcd2ca" config-ref="FTP_Config" path="datastudent.csv"/>
+		<logger level="INFO" doc:name="Logger" doc:id="92ddc7d0-9a8c-4cb7-9c6d-e8c91cce6c8d" message="final"/>
+	</flow>
+</mule>
